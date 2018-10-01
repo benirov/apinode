@@ -4,14 +4,13 @@ const services = require('../services')
 
 function isAuth(req, res, next)
 {
-  console.log(req.headers)
+  console.log(req.headers.authorization)
   if(!req.headers.authorization)
   {
     return res.status(403).send({message: 'no tienes autorizaciòn'});
   }
-
-    console.log(req.headers.authorization);
-    const token = req.headers.authorization.split(" ")[1];
+    let tokenReq = 'Bearer '+req.headers.authorization; 
+    const token = tokenReq.split(" ")[1];
     console.log(`token: ${token}`);
 
 

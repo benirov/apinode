@@ -4,20 +4,30 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const hbs = require('express-handlebars');
 const app =  express();
+const api = require('./route'); 
+const path = require('path');  
 
-const api = require('./route');
-
-app.use(bodyParser.urlencoded({extended : false}));
+app.use(bodyParser.urlencoded({extended : false}));  
 app.use(bodyParser.json());
 
-app.engine('.hbs', hbs({
-  defaultlayout: 'default',
-  extname: '.hbs'
-}));
-app.set('view engine', '.hbs');
+// const publicPath = path.join(__dirname, '../views'); 
+                
+app.engine('handlebars', hbs({defaultLayout: 'default'}));
+
+app.set('view engine', 'handlebars'); 
+
+app.use(express.static(__dirname + '/views')); 
+
+app.get('/', (req, res) =>
+{
+  res.render('index')
+});
+
 app.get('/login', (req, res) =>
 {
-  res.render('login');
+  res.render('login'), {
+    title: 'login'
+  }
 });
 app.get('/products', (req, res) =>
 {

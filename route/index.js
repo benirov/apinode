@@ -6,15 +6,15 @@ const auth = require('../middleware/auth.js');
 const userCtrl = require('../controllers/user')
 const api = express.Router();
 // rutas de productos
-api.get('/product', auth, ProductCtrl.getProducts);
+api.get('/products', auth, ProductCtrl.getProducts);
 
-api.get('/product/:id', ProductCtrl.getProduct);
+api.get('/product/:id', auth, ProductCtrl.getProduct);
 
-api.post('/product', ProductCtrl.saveProduct);
+api.post('/product', auth, ProductCtrl.saveProduct);
 
-api.put('/product/:id', ProductCtrl.updateProduct)
+api.put('/product/:id', auth, ProductCtrl.updateProduct)
 
-api.delete('/product/:id', ProductCtrl.deleteProduct);
+api.delete('/product/:id', auth, ProductCtrl.deleteProduct);
 
 api.get('/private', auth, (req, res) =>
 {
@@ -23,10 +23,10 @@ api.get('/private', auth, (req, res) =>
 
 // rutas de usuarios
 
-api.get('/users', userCtrl.getUsers);
+api.get('/users', auth, userCtrl.getUsers);
 api.post('/signup', userCtrl.signUp);
 
 api.post('/signin', userCtrl.signIn);
-api.post('/deleteuser/:id', userCtrl.deleteUser);
+api.post('/deleteuser/:id', auth, userCtrl.deleteUser);
 
 module.exports = api;

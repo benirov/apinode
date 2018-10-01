@@ -34,18 +34,20 @@ function signIn(req, res)
   {
     if(error)
     {
-      return res.status(500).send({message: error});
+      return res.status(500).send({message: error, status: 500});
     }
-    else if(!user)
+    else if(user = '' ||user.length == 0 ||  !user)
     {
-      return  res.status(404).send({message: 'no existe el usuario'});
+      return  res.status(404).send({message: 'no existe el usuario', status: 404});
+
     }
     else
     {
       req.user = user;
       res.status(200).send({
         message: 'logueado correctamente',
-        token: services.createToken(user)
+        token: services.createToken(user),
+        status: 200
       });
     }
   });

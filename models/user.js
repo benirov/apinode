@@ -10,7 +10,8 @@ const UserSchema = new Schema(
     email: {type: String, unique: true, lowercase: true},
     displayName: String,
     avatar: String,
-    password: {type: String, select: false},
+    password: {type: String},
+    passwordHas: {type: String},
     signupDate : {type: Date, default: Date.now()},
     lastLogin: Date
   });
@@ -31,7 +32,7 @@ const UserSchema = new Schema(
         }
         else
         {
-          bcrypt.hash(user.password, salt, null, (error, hash) =>
+          bcrypt.hash(user.passwordHas, salt, null, (error, hash) =>
           {
             if(error)
             {
@@ -39,7 +40,7 @@ const UserSchema = new Schema(
             }
             else
             {
-              user.password = hash;
+              user.passwordHas = hash;
               next();
             }
           })
