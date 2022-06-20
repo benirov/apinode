@@ -5,7 +5,7 @@ const app = require('./app');
 const config = require('./config');
 
 console.log('config.db', config.db);
-mongoose.connect(config.db, (error, resp) => {
+mongoose.connect(config.db, {autoIndex: false},(error, resp) => {
   if(error){
     return console.log(`Error al conectar con base de datos: ${error}`)
   }else {
