@@ -2,124 +2,94 @@
 
 /* para utlizar el Shema que creamos en models/product*/
 const Product = require('../models/product');
+const { validationResult } = require('express-validator') 
+exports.getProduct = async (req, res) => {
 
-function getProduct(req, res)
-{
-  let id = req.params.id;
-  Product.findById(id, (error, product) =>
-  {
-    if(error)
-    {
-      return res.status(500).send({message: `error al realizar la peticion: ${error}`});
-    }
-    else if(!product)
-    {
-      return res.status(404).send({message: `El prodcuto no existe`});
-    }
-    else
-    {
-      return res.status(200).send({product});
-    }
-  });
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+  const  {id} = req.params;
+  const product = await Product.findById(id);
+  if(product){
+    return res.status(200).send({product});
+  }else{
+    return res.status(404).send({message: `El producto no existe`}); 
+  }
 }
 
-function getProducts(req, res)
-{
-  Product.find({}, (error, products) =>
-  {
-    if(error)
-    {
-      res.status(400).send({message: `error al realizar la peticion: ${error}`});
-    }
-    else if(!products)
-    {
-      res.status(404).send({message: 'no existen productos en la base de datos'});
-    }
-    else
-    {
+exports.getProducts = async (req, res) =>{
+  const products = await Product.find({});
+    if(products){
       res.status(200).send({products});
     }
-  })
-
+    else if(!products){
+      res.status(404).send({message: 'no existen productos en la base de datos'});
+    }
 }
 
-function saveProduct(req, res)
-{
-  console.log("POST /api/product");
-  console.log(req.body);
+exports.saveProduct = async (req, res) =>{
+
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
   let product = new Product();
   product.name = req.body.name;
   product.img = req.body.picture;
   product.price = req.body.price;
   product.category = req.body.category;
   product.description = req.body.description;
+  const newProduct = product.save();
 
-  product.save((error, statusProduct) =>
-  {
-    if(error)
-    {
-      res.status(500).send({message: `Error al guardar producto : ${error}`})
+  if(newProduct){
+      res.status(200).send({message: `Producto guardado`});
     }
-    else
-    {
-      res.status(200).send({message: `producto guardado con id : ${statusProduct}`});
+    else{
+      res.status(500).send({message: `Error al guardar producto`})
     }
-  })
 
 }
 
-function updateProduct(req, res)
-{
-  let id = req.params.id;
+exports.updateProduct = async (req, res) => {
+
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+
+  let {id} = req.params;
   let update = req.body;
-
-  Product.findByIdAndUpdate(id, update, (error, productUpdate) =>
-  {
-    if(error)
-    {
+  const updateProducto = Product.findByIdAndUpdate(id, update);
+  if(!updateProducto){
       res.status(500).send({message: `error al actualizar el producto ${error}`});
+    }else{
+      res.status(200).send({product: updateProducto});
     }
-    else
-    {
-      res.status(200).send({product: productUpdate});
-    }
-  })
 
 }
 
-function deleteProduct(req, res)
-{
+exports.deleteProduct = async (req, res) => {
+
+   //mostrar mensajes de error
+   const errores = validationResult(req);
+   if(!errores.isEmpty()){
+       return res.status(400).json({errores : errores.array()});
+   }
+ 
   let id = req.params.id;
 
-  Product.findById(id, (error, product) =>
-  {
-    if(error)
-    {
-      res.status(500).send({message: `Error al eliminar producto: ${error}`});
+  const deleteProduct = await Product.findOneAndRemove(id) 
+    if(deleteProduct){
+      res.status(200).send({message: `Producto con id: ${id} eliminado`}); 
     }
-    else
-    {
-      product.remove(err =>
-        {
-          if(err)
-          {
-            res.status(500).send({message: `Error al eliminar producto: ${err}`});
-          }
-          else
-          {
-            res.status(200).send({message: `Producto con id: ${id} eliminado`});
-          }
-        });
+    else{
+      res.status(400).send({message: `El producto no existe`});
     }
-  });
 
 }
 
-module.exports =
-{
-  getProduct,
-  getProducts,
-  saveProduct,
-  updateProduct,
-  deleteProduct
-}
+

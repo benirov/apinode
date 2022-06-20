@@ -1,83 +1,125 @@
 'use strict'
 
-const moongose = require('mongoose');
 const User = require('../models/user');
-const services = require('../services/')
+const services = require('../services/');
+const bcrypt = require('bcrypt-nodejs');
+const ObjectId = require('mongodb').ObjectId;
+const { validationResult } = require('express-validator');
 
 
-function signUp(req, res)
-{
-  const user = new User({
-    email: req.body.email,
-    displayName: req.body.displayName,
-    password: req.body.password
-  });
+exports.signUp = async (req, res) => {
 
-  user.save((error) =>
-  {
-    if(error)
-    {
-      console.log(error)
-      res.status(500).send({message: 'Error al crear usuario'})
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+
+  try {
+    const user = new User({
+      email: req.body.email,
+      username: req.body.username,
+      password: req.body.password,
+      orders: []
+    });
+
+    //validar si existe email 
+    const ExistUser = await User.findOne({email: req.body.email});
+    if(ExistUser){
+      throw new Error("Email Ya existe");
     }
-    else
-    {
-      return res.status(200).send({token: services.createToken(user)})
+  
+    const newUser = await user.save();
+    if(newUser){
+      return res.status(200).send({message: 'Usuario creado'});
+    }else{
+      return res.status(500).send({message: 'Error al crear usuario'});
     }
-  })
+    
+  } catch (error) {
+    return res.status(500).send({message: `Error al crear usuario : ${error}`});
+  }
 
 }
 
-function signIn(req, res)
-{
-  User.find({email: req.body.email}, (error, user) =>
-  {
-    if(error)
-    {
-      return res.status(500).send({message: error, status: 500});
-    }
-    else if(user = '' ||user.length == 0 ||  !user)
-    {
-      return  res.status(404).send({message: 'no existe el usuario', status: 404});
+exports.signIn = async (req, res) => {
 
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+
+  const user = await User.findOne({email: req.body.email});
+
+  if(user){
+
+    //verificar password y autenticar
+    console.log(bcrypt.compareSync(req.body.password, user.passwordHas));
+    if(!bcrypt.compareSync(req.body.password, user.passwordHas)){
+        return res.status(401).json({message: "Password incorrecto"});
+        
     }
-    else
-    {
-      req.user = user;
+    req.user = user;
+      const token = await services.createToken(user);
       res.status(200).send({
         message: 'logueado correctamente',
-        token: services.createToken(user),
-        status: 200
+        token: token,
       });
+  }else{
+    return  res.status(404).send({message: 'no existe el usuario', status: 404});
+  }
+}
+
+exports.userAutenticate = async (req, res) => {
+  const usuario = await User.findOne({_id: req.user}, { "_id": 0, "password": 0, "passwordHas": 0, "email": 0, "signupDate": 0 });
+  return res.json(usuario);
+
+}
+
+exports.deleteUser = async (req, res) => {
+
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+  let { id } = req.params;
+  const user = await User.findOneAndRemove(id);
+  if(user){
+    return res.status(200).send({message: `User con id: ${id} eliminado`});
+  }else{
+    return res.status(400).send({message: `User con id: ${id} eliminado`});
+  }
+}
+
+
+exports.createOrder = async (req, res) => {
+
+  //mostrar mensajes de error
+  const errores = validationResult(req);
+  if(!errores.isEmpty()){
+      return res.status(400).json({errores : errores.array()});
+  }
+
+    const usuario = await User.findOne({_id: req.user});
+
+    let update = [{"products": req.body.order.cart, "totalPrice": req.body.order.totalPrice, "date": req.body.order.date}];
+
+    if(usuario.orders.length > 0){
+      update = [...usuario.orders, update[0]];
     }
-  });
-}
+    User.findByIdAndUpdate({_id: new ObjectId(usuario.id)}, { $set: {orders: update}},{new: true}, function (err, oldMedium) { 
+      
+      console.log(err);
+ 
+      
+     });
+      if(true){
+        res.status(200).send({message: `Order created`}); 
+      }
+      else{
+        res.status(400).send({message: `Error creting order`});
+      }
 
-function getUsers(req, res)
-{
-  User.find({}, (error, user) =>
-  {
-    res.status(200).send(user);
-  })
-}
-
-function deleteUser(req, res)
-{
-  let id = req.params.id;
-  User.findById(id, (error, user) =>
-  {
-    console.log(user);
-    user.remove(error =>
-      {
-        res.status(200).send({message: `User con id: ${id} eliminado`});
-      })
-  })
-}
-
-module.exports =
-{
-  signUp,
-  signIn,
-  getUsers,
-  deleteUser
 }
